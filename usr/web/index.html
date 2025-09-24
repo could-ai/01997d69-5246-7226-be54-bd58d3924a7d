@@ -1,38 +1,238 @@
 <!DOCTYPE html>
-<html>
+<html lang="fr">
 <head>
-  <!--
-    If you are serving your web app in a path other than the root, change the
-    href value below to reflect the base path you are serving from.
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Application VPN</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap');
 
-    The path provided below has to start and end with a slash "/" in order for
-    it to work correctly.
+        :root {
+            --primary-color: #0a0a23;
+            --secondary-color: #1b1b32;
+            --accent-color: #00f5d4;
+            --text-color: #f5f6f7;
+            --disconnected-color: #ff4136;
+            --connected-color: #2ecc40;
+            --connecting-color: #ffdc00;
+        }
 
-    For more details:
-    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
 
-    This is a placeholder for base href that will be replaced by the value of
-    the `--base-href` argument provided to `flutter build`.
-  -->
-  <base href="$FLUTTER_BASE_HREF">
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: var(--primary-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
 
-  <meta charset="UTF-8">
-  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
+        .vpn-container {
+            background-color: var(--secondary-color);
+            border-radius: 20px;
+            padding: 40px;
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--accent-color);
+        }
 
-  <!-- iOS meta tags & icons -->
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="couldai_user_app">
-  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+        .vpn-header h1 {
+            margin-bottom: 10px;
+            font-weight: 700;
+            color: var(--accent-color);
+        }
 
-  <!-- Favicon -->
-  <link rel="icon" type="image/png" href="favicon.png"/>
+        .vpn-status {
+            margin-bottom: 30px;
+            font-size: 1.2em;
+            font-weight: 300;
+        }
 
-  <title>couldai_user_app</title>
-  <link rel="manifest" href="manifest.json">
+        .status-light {
+            display: inline-block;
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            margin-right: 10px;
+            vertical-align: middle;
+            transition: background-color 0.3s ease;
+        }
+
+        .status-light.disconnected {
+            background-color: var(--disconnected-color);
+        }
+
+        .status-light.connected {
+            background-color: var(--connected-color);
+        }
+        
+        .status-light.connecting {
+            background-color: var(--connecting-color);
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(255, 220, 0, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(255, 220, 0, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 220, 0, 0); }
+        }
+
+        .connect-btn-wrapper {
+            margin-bottom: 30px;
+        }
+
+        #connectBtn {
+            background-color: var(--primary-color);
+            border: 2px solid var(--accent-color);
+            border-radius: 50%;
+            color: var(--accent-color);
+            cursor: pointer;
+            width: 150px;
+            height: 150px;
+            font-size: 1.5em;
+            font-weight: 700;
+            outline: none;
+            transition: all 0.3s ease;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0 auto;
+        }
+
+        #connectBtn:hover {
+            background-color: var(--accent-color);
+            color: var(--primary-color);
+            box-shadow: 0 0 20px var(--accent-color);
+        }
+        
+        #connectBtn:disabled {
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        .server-selection {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .server-selection label {
+            margin-bottom: 10px;
+            font-weight: 400;
+        }
+
+        #serverList {
+            background-color: var(--primary-color);
+            color: var(--text-color);
+            border: 1px solid var(--accent-color);
+            border-radius: 5px;
+            padding: 10px;
+            width: 100%;
+            font-size: 1em;
+            cursor: pointer;
+        }
+        
+        #serverList:focus {
+            outline: none;
+            border-color: var(--connected-color);
+        }
+    </style>
 </head>
 <body>
-  <script src="flutter_bootstrap.js" async></script>
+
+    <div class="vpn-container">
+        <div class="vpn-header">
+            <h1>VPN Virtuel</h1>
+        </div>
+        <div class="vpn-status">
+            <span id="statusLight" class="status-light disconnected"></span>
+            <span id="statusText">Déconnecté</span>
+        </div>
+        <div class="connect-btn-wrapper">
+            <button id="connectBtn">CONNECTER</button>
+        </div>
+        <div class="server-selection">
+            <label for="serverList">Choisir un serveur :</label>
+            <select id="serverList">
+                <option value="us">États-Unis</option>
+                <option value="uk">Royaume-Uni</option>
+                <option value="de">Allemagne</option>
+                <option value="jp">Japon</option>
+                <option value="ca">Canada</option>
+            </select>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const connectBtn = document.getElementById('connectBtn');
+            const statusText = document.getElementById('statusText');
+            const statusLight = document.getElementById('statusLight');
+            const serverList = document.getElementById('serverList');
+
+            let isConnected = false;
+            let isConnecting = false;
+
+            connectBtn.addEventListener('click', () => {
+                if (isConnecting) return;
+
+                if (isConnected) {
+                    // Déconnexion
+                    disconnect();
+                } else {
+                    // Connexion
+                    connect();
+                }
+            });
+
+            function connect() {
+                isConnecting = true;
+                
+                // Mettre à jour l'interface pour l'état "Connexion en cours..."
+                statusText.textContent = 'Connexion en cours...';
+                statusLight.className = 'status-light connecting';
+                connectBtn.textContent = '...';
+                connectBtn.disabled = true;
+                serverList.disabled = true;
+
+                // Simuler un délai de connexion de 2 secondes
+                setTimeout(() => {
+                    isConnected = true;
+                    isConnecting = false;
+                    
+                    // Mettre à jour l'interface pour l'état "Connecté"
+                    const selectedServer = serverList.options[serverList.selectedIndex].text;
+                    statusText.textContent = `Connecté à ${selectedServer}`;
+                    statusLight.className = 'status-light connected';
+                    connectBtn.textContent = 'DÉCONNECTER';
+                    connectBtn.style.borderColor = 'var(--connected-color)';
+                    connectBtn.style.color = 'var(--connected-color)';
+                    connectBtn.disabled = false;
+
+                }, 2000);
+            }
+
+            function disconnect() {
+                isConnected = false;
+
+                // Mettre à jour l'interface pour l'état "Déconnecté"
+                statusText.textContent = 'Déconnecté';
+                statusLight.className = 'status-light disconnected';
+                connectBtn.textContent = 'CONNECTER';
+                connectBtn.style.borderColor = 'var(--accent-color)';
+                connectBtn.style.color = 'var(--accent-color)';
+                serverList.disabled = false;
+            }
+        });
+    </script>
 </body>
 </html>
